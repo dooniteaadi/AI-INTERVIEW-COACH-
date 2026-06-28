@@ -1,11 +1,17 @@
 import React, { useState, useEffect, useRef } from 'react'
 import { motion } from 'framer-motion'
 
-function VoiceRecorder({ onTranscript, darkMode }) {
+function VoiceRecorder({ onTranscript, onVolumeData, darkMode }) {
   const [isRecording, setIsRecording] = useState(false)
   const [transcript, setTranscript] = useState('')
   const [isSupported, setIsSupported] = useState(false)
+  
   const recognitionRef = useRef(null)
+  const audioContextRef = useRef(null)
+  const analyserRef = useRef(null)
+  const streamRef = useRef(null)
+  const volumeIntervalRef = useRef(null)
+  const volumeDataRef = useRef([])
 
   useEffect(() => {
     // Check if Web Speech API is supported
@@ -54,15 +60,68 @@ function VoiceRecorder({ onTranscript, darkMode }) {
         }
       }
     }
+
+    return () => {
+      // Cleanup audio context on unmount
+      if (volumeIntervalRef.current) clearInterval(volumeIntervalRef.current)
+      if (streamRef.current) streamRef.current.getTracks().forEach(track => track.stop())
+      if (audioContextRef.current) audioContextRef.current.close()
+    }
   }, [])
 
-  const startRecording = () => {
+  const startRecording = async () => {
     if (recognitionRef.current && !isRecording) {
       try {
         recognitionRef.current.start()
         setIsRecording(true)
+        
+        // Initialize Web Audio API for extracting volume dynamics
+        volumeDataRef.current = []
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false })
+        streamRef.current = stream
+
+        const AudioContext = window.AudioContext || window.webkitAudioContext
+        const audioContext = new AudioContext()
+        audioContextRef.current = audioContext
+
+        const source = audioContext.createMediaStreamSource(stream)
+        const analyser = audioContext.createAnalyser()
+        analyser.fftSize = 256
+        analyserRef.current = analyser
+
+        source.connect(analyser)
+
+        const bufferLength = analyser.frequencyBinCount
+        const dataArray = new Uint8Array(bufferLength)
+
+        volumeIntervalRef.current = setInterval(() => {
+          if (analyserRef.current) {
+            analyserRef.current.getByteFrequencyData(dataArray)
+            let sum = 0
+            for (let i = 0; i < bufferLength; i++) {
+              sum += dataArray[i]
+            }
+            const average = sum / bufferLength
+            
+            // Normalize value to a 0-100 range
+            const normalized = Math.min(Math.round((average / 128) * 100), 100)
+            volumeDataRef.current.push(normalized)
+            
+            if (onVolumeData) {
+              onVolumeData([...volumeDataRef.current])
+            }
+          }
+        }, 150) // Sample decibel peaks every 150ms
+
       } catch (e) {
-        console.error('Failed to start recognition:', e)
+        console.error('Failed to start microphone or Web Audio Context:', e)
+        // Fallback to recording without audio visualization if blocked
+        try {
+          recognitionRef.current.start()
+          setIsRecording(true)
+        } catch (err) {
+          console.error(err)
+        }
       }
     }
   }
@@ -71,12 +130,29 @@ function VoiceRecorder({ onTranscript, darkMode }) {
     if (recognitionRef.current && isRecording) {
       recognitionRef.current.stop()
       setIsRecording(false)
+
+      if (volumeIntervalRef.current) {
+        clearInterval(volumeIntervalRef.current)
+        volumeIntervalRef.current = null
+      }
+      if (streamRef.current) {
+        streamRef.current.getTracks().forEach(track => track.stop())
+        streamRef.current = null
+      }
+      if (audioContextRef.current) {
+        audioContextRef.current.close()
+        audioContextRef.current = null
+      }
     }
   }
 
   const clearTranscript = () => {
     setTranscript('')
     onTranscript('')
+    volumeDataRef.current = []
+    if (onVolumeData) {
+      onVolumeData([])
+    }
   }
 
   if (!isSupported) {
@@ -101,34 +177,43 @@ function VoiceRecorder({ onTranscript, darkMode }) {
             setTranscript(e.target.value)
             onTranscript(e.target.value)
           }}
-          placeholder="Click the microphone to start recording, or type your response..."
-          className="w-full h-48 p-4 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 resize-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+          placeholder="Click the microphone to start recording, or type to edit your response..."
+          className="w-full h-48 p-5 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/30 text-slate-900 dark:text-white placeholder-slate-400 focus:ring-2 focus:ring-primary-500 focus:border-transparent resize-none transition-all duration-300"
         />
         {isRecording && (
-          <motion.div
-            initial={{ scale: 1 }}
-            animate={{ scale: [1, 1.2, 1] }}
-            transition={{ repeat: Infinity, duration: 1 }}
-            className="absolute top-4 right-4 w-4 h-4 bg-red-500 rounded-full"
-          />
+          <div className="absolute top-5 right-5 flex items-end gap-1 h-6">
+            <span className="w-1 bg-red-500 rounded-full animate-wave-bar" style={{ animationDelay: '0.1s', height: '100%' }}></span>
+            <span className="w-1 bg-red-500 rounded-full animate-wave-bar" style={{ animationDelay: '0.3s', height: '60%' }}></span>
+            <span className="w-1 bg-red-500 rounded-full animate-wave-bar" style={{ animationDelay: '0.5s', height: '80%' }}></span>
+            <span className="w-1 bg-red-500 rounded-full animate-wave-bar" style={{ animationDelay: '0.2s', height: '50%' }}></span>
+            <span className="w-1 bg-red-500 rounded-full animate-wave-bar" style={{ animationDelay: '0.4s', height: '90%' }}></span>
+          </div>
         )}
       </div>
 
       <div className="flex gap-4">
         <button
           onClick={isRecording ? stopRecording : startRecording}
-          className={`flex-1 py-3 px-6 rounded-lg font-semibold text-white transition-all ${
+          className={`flex-1 py-4 px-6 rounded-2xl font-bold text-white transition-all duration-300 flex items-center justify-center gap-2 cursor-pointer shadow-lg ${
             isRecording
-              ? 'bg-red-600 hover:bg-red-700'
-              : 'bg-primary-600 hover:bg-primary-700'
-          } shadow-lg hover:shadow-xl`}
+              ? 'bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-700 hover:to-rose-700 shadow-red-500/10 active:scale-[0.99]'
+              : 'bg-gradient-to-r from-primary-600 to-indigo-600 hover:from-primary-700 hover:to-indigo-700 shadow-primary-500/10 active:scale-[0.99]'
+          }`}
         >
-          {isRecording ? '⏹️ Stop Recording' : '🎤 Start Recording'}
+          {isRecording ? (
+            <>
+              <span>⏹️ Stop Recording</span>
+            </>
+          ) : (
+            <>
+              <span>🎤 Start Recording</span>
+            </>
+          )}
         </button>
         {transcript && (
           <button
             onClick={clearTranscript}
-            className="py-3 px-6 rounded-lg font-semibold bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-900 dark:text-white transition-all"
+            className="py-4 px-6 rounded-2xl font-bold bg-slate-200 dark:bg-slate-800 hover:bg-slate-350 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 transition-all duration-300 active:scale-[0.99] cursor-pointer"
           >
             🗑️ Clear
           </button>
@@ -139,9 +224,9 @@ function VoiceRecorder({ onTranscript, darkMode }) {
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          className="text-center text-sm text-primary-600 dark:text-primary-400"
+          className="text-center text-xs font-bold text-red-500 dark:text-red-400 animate-pulse"
         >
-          🎤 Listening... Speak now
+          🎙️ Listening... Speak clearly into your microphone
         </motion.div>
       )}
     </div>
@@ -149,4 +234,3 @@ function VoiceRecorder({ onTranscript, darkMode }) {
 }
 
 export default VoiceRecorder
-

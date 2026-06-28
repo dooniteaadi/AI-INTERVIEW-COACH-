@@ -1,0 +1,75 @@
+{
+  "Software Engineer": [
+    "Tell me about yourself and your background in software development.",
+    "What programming languages are you most comfortable with, and why?",
+    "Describe a challenging technical problem you've solved recently.",
+    "How do you approach debugging a complex issue in production?",
+    "Explain the difference between REST and GraphQL APIs.",
+    "What is your experience with version control systems like Git?",
+    "How do you ensure code quality in your projects?",
+    "Describe your experience with testing (unit, integration, e2e).",
+    "What is your approach to handling technical debt?",
+    "How do you stay updated with the latest technologies and best practices?"
+  ],
+  "Data Scientist": [
+    "Walk me through your experience with machine learning projects.",
+    "How do you handle missing data in a dataset?",
+    "Explain the difference between supervised and unsupervised learning.",
+    "Describe a time when you had to explain a complex model to non-technical stakeholders.",
+    "What metrics do you use to evaluate model performance?",
+    "How do you prevent overfitting in your models?",
+    "What is your experience with deep learning frameworks?",
+    "Describe your approach to feature engineering.",
+    "How do you handle imbalanced datasets?",
+    "What is your experience with big data technologies?"
+  ],
+  "Product Manager": [
+    "Tell me about a product you've managed from conception to launch.",
+    "How do you prioritize features in a product roadmap?",
+    "Describe a time when you had to make a difficult product decision.",
+    "How do you gather and incorporate user feedback?",
+    "What metrics do you use to measure product success?",
+    "How do you balance stakeholder needs with user needs?",
+    "Describe your experience with agile methodologies.",
+    "How do you handle competing priorities from different teams?",
+    "What is your approach to A/B testing?",
+    "How do you communicate product vision to engineering teams?"
+  ],
+  "UX Designer": [
+    "Walk me through your design process for a new feature.",
+    "How do you conduct user research?",
+    "Describe a time when user feedback changed your design direction.",
+    "What tools do you use for prototyping and design?",
+    "How do you balance user needs with business requirements?",
+    "Explain your approach to accessibility in design.",
+    "How do you collaborate with developers during implementation?",
+    "Describe a challenging design problem you've solved.",
+    "What is your experience with design systems?",
+    "How do you measure the success of your designs?"
+  ],
+  "DevOps Engineer": [
+    "Describe your experience with CI/CD pipelines.",
+    "How do you ensure system reliability and uptime?",
+    "What is your approach to infrastructure as code?",
+    "Explain your experience with containerization (Docker, Kubernetes).",
+    "How do you handle incident response and post-mortems?",
+    "What monitoring and logging tools are you familiar with?",
+    "Describe your experience with cloud platforms (AWS, Azure, GCP).",
+    "How do you ensure security in your infrastructure?",
+    "What is your approach to capacity planning?",
+    "How do you balance speed of deployment with system stability?"
+  ],
+  "Marketing Manager": [
+    "Tell me about a successful marketing campaign you've led.",
+    "How do you measure ROI for marketing initiatives?",
+    "Describe your experience with digital marketing channels.",
+    "How do you develop a marketing strategy for a new product?",
+    "What tools do you use for marketing analytics?",
+    "How do you manage marketing budgets effectively?",
+    "Describe your experience with content marketing.",
+    "How do you stay updated with marketing trends?",
+    "What is your approach to A/B testing in marketing?",
+    "How do you collaborate with sales teams?"
+  ]
+}
+
